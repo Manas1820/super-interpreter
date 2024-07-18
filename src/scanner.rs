@@ -54,7 +54,6 @@ impl Scanner {
 
     fn scan_token<'a>(&mut self) {
         let current_char = Self::advance(self);
-        dbg!(self.current.clone());
         match current_char {
             '(' => Self::add_token(self, TokenType::LeftParen),
             ')' => Self::add_token(self, TokenType::RightParen),
@@ -100,7 +99,6 @@ impl Scanner {
                     while self.peek() != '\n' && !self.is_at_end() {
                         Self::advance(self);
                     }
-                    self.line += 1;
                 } else {
                     Self::add_token(self, TokenType::Slash);
                 }
