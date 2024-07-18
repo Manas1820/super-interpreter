@@ -1,3 +1,4 @@
+use interpreter_starter_rust::scanner::Scanner;
 use std::env;
 use std::fs;
 use std::io::{self, Write};
@@ -24,7 +25,11 @@ fn main() {
 
             // Uncomment this block to pass the first stage
             if !file_contents.is_empty() {
-                panic!("Scanner not implemented");
+                let mut scanner = Scanner::new(file_contents);
+                let tokens = scanner.scan_tokens();
+                for token in tokens {
+                    println!("{}", token);
+                }
             } else {
                 println!("EOF  null"); // Placeholder, remove this line when implementing the scanner
             }
