@@ -65,6 +65,34 @@ impl Scanner {
             '+' => Self::add_token(self, TokenType::Plus),
             ';' => Self::add_token(self, TokenType::Semicolon),
             '*' => Self::add_token(self, TokenType::Star),
+            '!' => {
+                if Self::advance_peek(self, '=') {
+                    Self::add_token(self, TokenType::BangEqual);
+                } else {
+                    Self::add_token(self, TokenType::Bang);
+                }
+            }
+            '=' => {
+                if Self::advance_peek(self, '=') {
+                    Self::add_token(self, TokenType::EqualEqual);
+                } else {
+                    Self::add_token(self, TokenType::Equal);
+                }
+            }
+            '<' => {
+                if Self::advance_peek(self, '=') {
+                    Self::add_token(self, TokenType::LessEqual);
+                } else {
+                    Self::add_token(self, TokenType::Less);
+                }
+            }
+            '>' => {
+                if Self::advance_peek(self, '=') {
+                    Self::add_token(self, TokenType::GreaterEqual);
+                } else {
+                    Self::add_token(self, TokenType::Greater);
+                }
+            }
             _ => {
                 self.errors.push(ScannerError {
                     message: format!("Unexpected character: {}", current_char),
@@ -81,6 +109,22 @@ impl Scanner {
         self.column += 1;
 
         current_char
+    }
+
+    fn advance_peek(&mut self, expected: char) -> bool {
+        if self.is_at_end() {
+            return false;
+        }
+
+        let next_char = self.source.chars().nth(self.current).unwrap();
+        if next_char != expected {
+            return false;
+        }
+
+        self.current += 1;
+        self.column += 1;
+
+        true
     }
 
     fn add_token(&mut self, token_type: TokenType) {
