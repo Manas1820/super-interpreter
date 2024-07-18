@@ -16,7 +16,7 @@ pub struct Scanner {
     pub current: usize,
     pub line: u32,
     pub column: u32,
-    pub error: Option<ScannerError>,
+    pub errors: Vec<ScannerError>,
 }
 
 impl Scanner {
@@ -28,11 +28,11 @@ impl Scanner {
             current: 0,
             line: 1,
             column: 1,
-            error: None,
+            errors: Vec::new(),
         }
     }
 
-    pub fn scan_tokens(&mut self) -> Vec<Token> {
+    pub fn scan_tokens(&mut self) {
         while !self.is_at_end() {
             // We are at the beginning of the next lexeme.
             self.start = self.current;
@@ -46,11 +46,10 @@ impl Scanner {
             self.line,
             self.column,
         ));
-        self.tokens.clone()
     }
 
     fn is_at_end(&self) -> bool {
-        self.current >= self.source.len() || self.error.is_some()
+        self.current >= self.source.len()
     }
 
     fn scan_token<'a>(&mut self) {
@@ -67,7 +66,7 @@ impl Scanner {
             ';' => Self::add_token(self, TokenType::Semicolon),
             '*' => Self::add_token(self, TokenType::Star),
             _ => {
-                self.error = Some(ScannerError {
+                self.errors.push(ScannerError {
                     message: format!("Unexpected character: {}", current_char),
                     line: self.line,
                     column: self.column,
@@ -99,6 +98,12 @@ pub struct ScannerError {
 }
 
 impl ScannerError {}
+
+impl std::fmt::Display for ScannerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[line {}] Error: {}", self.line, self.message)
+    }
+}
 
 #[cfg(test)]
 mod tests {
