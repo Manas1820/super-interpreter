@@ -2,12 +2,15 @@ use interpreter_starter_rust::scanner::Scanner;
 use std::env;
 use std::fs;
 use std::io::{self, Write};
+use std::process::ExitCode;
 
-fn main() {
+fn main() -> ExitCode {
     let args: Vec<String> = env::args().collect();
+    let mut exit_code = ExitCode::SUCCESS;
+
     if args.len() < 3 {
         writeln!(io::stderr(), "Usage: {} tokenize <filename>", args[0]).unwrap();
-        return;
+        return exit_code;
     }
 
     let command = &args[1];
@@ -28,8 +31,12 @@ fn main() {
                 let mut scanner = Scanner::new(file_contents);
                 scanner.scan_tokens();
 
+                if !scanner.errors.is_empty() {
+                    exit_code = ExitCode::from(65);
+                }
+
                 for error in scanner.errors {
-                    println!("{}", error);
+                    eprintln!("{}", error);
                 }
 
                 for token in scanner.tokens {
@@ -41,7 +48,9 @@ fn main() {
         }
         _ => {
             writeln!(io::stderr(), "Unknown command: {}", command).unwrap();
-            return;
+            return exit_code;
         }
     }
+
+    exit_code
 }
