@@ -105,6 +105,13 @@ impl Scanner {
                     Self::add_token(self, TokenType::Slash);
                 }
             }
+            ' ' | '\r' | '\t' => {
+                // Ignore whitespace.
+            }
+            '\n' => {
+                self.line += 1;
+                self.column = 0;
+            }
             _ => {
                 self.errors.push(ScannerError {
                     message: format!("Unexpected character: {}", current_char),
