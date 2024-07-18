@@ -10,7 +10,7 @@ use crate::domain::token_type::TokenType;
 
 #[derive(Debug, Clone)]
 pub struct Scanner {
-    pub source: String,
+    pub source: Vec<char>,
     pub tokens: Vec<Token>,
     pub start: usize,
     pub current: usize,
@@ -22,12 +22,12 @@ pub struct Scanner {
 impl Scanner {
     pub fn new(source: String) -> Self {
         Self {
-            source,
+            source: source.chars().collect(),
             tokens: Vec::new(),
             start: 0,
             current: 0,
             line: 1,
-            column: 1,
+            column: 0,
             errors: Vec::new(),
         }
     }
@@ -54,6 +54,7 @@ impl Scanner {
 
     fn scan_token<'a>(&mut self) {
         let current_char = Self::advance(self);
+        dbg!(self.current.clone());
         match current_char {
             '(' => Self::add_token(self, TokenType::LeftParen),
             ')' => Self::add_token(self, TokenType::RightParen),
@@ -93,6 +94,17 @@ impl Scanner {
                     Self::add_token(self, TokenType::Greater);
                 }
             }
+            '/' => {
+                if Self::advance_peek(self, '/') {
+                    // A comment goes until the end of the line.
+                    while self.peek() != '\n' && !self.is_at_end() {
+                        Self::advance(self);
+                    }
+                    self.line += 1;
+                } else {
+                    Self::add_token(self, TokenType::Slash);
+                }
+            }
             _ => {
                 self.errors.push(ScannerError {
                     message: format!("Unexpected character: {}", current_char),
@@ -104,7 +116,7 @@ impl Scanner {
     }
 
     fn advance(&mut self) -> char {
-        let current_char = self.source.chars().nth(self.current).unwrap();
+        let current_char = self.source[self.current];
         self.current += 1;
         self.column += 1;
 
@@ -116,7 +128,7 @@ impl Scanner {
             return false;
         }
 
-        let next_char = self.source.chars().nth(self.current).unwrap();
+        let next_char = self.source[self.current];
         if next_char != expected {
             return false;
         }
@@ -127,8 +139,16 @@ impl Scanner {
         true
     }
 
+    fn peek(&mut self) -> char {
+        if self.is_at_end() {
+            return '\0';
+        }
+
+        self.source[self.current]
+    }
+
     fn add_token(&mut self, token_type: TokenType) {
-        let text = self.source[self.start..self.current].to_string();
+        let text = self.source[self.start..self.current].iter().collect();
         self.tokens
             .push(Token::new(token_type, text, None, self.line, self.column));
     }
@@ -158,31 +178,31 @@ mod tests {
         let source = "(()".to_string();
         let mut scanner = Scanner::new(source);
 
-        let tokens = scanner.scan_tokens();
-        assert_eq!(tokens.len(), 4);
-        assert_eq!(tokens[0].token_type, TokenType::LeftParen);
-        assert_eq!(tokens[1].token_type, TokenType::LeftParen);
-        assert_eq!(tokens[2].token_type, TokenType::RightParen);
-        assert_eq!(tokens[3].token_type, TokenType::Eof);
+        scanner.scan_tokens();
+        assert_eq!(scanner.tokens.len(), 4);
+        assert_eq!(scanner.tokens[0].token_type, TokenType::LeftParen);
+        assert_eq!(scanner.tokens[1].token_type, TokenType::LeftParen);
+        assert_eq!(scanner.tokens[2].token_type, TokenType::RightParen);
+        assert_eq!(scanner.tokens[3].token_type, TokenType::Eof);
     }
 
     #[test]
     fn test_scan_tokens() {
         let source = "(){},.-+;*".to_string();
         let mut scanner = Scanner::new(source);
-        let tokens = scanner.scan_tokens();
+        scanner.scan_tokens();
 
-        assert_eq!(tokens.len(), 11);
-        assert_eq!(tokens[0].token_type, TokenType::LeftParen);
-        assert_eq!(tokens[1].token_type, TokenType::RightParen);
-        assert_eq!(tokens[2].token_type, TokenType::LeftBrace);
-        assert_eq!(tokens[3].token_type, TokenType::RightBrace);
-        assert_eq!(tokens[4].token_type, TokenType::Comma);
-        assert_eq!(tokens[5].token_type, TokenType::Dot);
-        assert_eq!(tokens[6].token_type, TokenType::Minus);
-        assert_eq!(tokens[7].token_type, TokenType::Plus);
-        assert_eq!(tokens[8].token_type, TokenType::Semicolon);
-        assert_eq!(tokens[9].token_type, TokenType::Star);
-        assert_eq!(tokens[10].token_type, TokenType::Eof);
+        assert_eq!(scanner.tokens.len(), 11);
+        assert_eq!(scanner.tokens[0].token_type, TokenType::LeftParen);
+        assert_eq!(scanner.tokens[1].token_type, TokenType::RightParen);
+        assert_eq!(scanner.tokens[2].token_type, TokenType::LeftBrace);
+        assert_eq!(scanner.tokens[3].token_type, TokenType::RightBrace);
+        assert_eq!(scanner.tokens[4].token_type, TokenType::Comma);
+        assert_eq!(scanner.tokens[5].token_type, TokenType::Dot);
+        assert_eq!(scanner.tokens[6].token_type, TokenType::Minus);
+        assert_eq!(scanner.tokens[7].token_type, TokenType::Plus);
+        assert_eq!(scanner.tokens[8].token_type, TokenType::Semicolon);
+        assert_eq!(scanner.tokens[9].token_type, TokenType::Star);
+        assert_eq!(scanner.tokens[10].token_type, TokenType::Eof);
     }
 }
