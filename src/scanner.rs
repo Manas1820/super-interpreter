@@ -52,45 +52,45 @@ impl Scanner {
         self.current >= self.source.len()
     }
 
-    fn scan_token<'a>(&mut self) {
+    fn scan_token(&mut self) {
         let current_char = Self::advance(self);
         match current_char {
-            '(' => Self::add_token(self, TokenType::LeftParen),
-            ')' => Self::add_token(self, TokenType::RightParen),
-            '{' => Self::add_token(self, TokenType::LeftBrace),
-            '}' => Self::add_token(self, TokenType::RightBrace),
-            ',' => Self::add_token(self, TokenType::Comma),
-            '.' => Self::add_token(self, TokenType::Dot),
-            '-' => Self::add_token(self, TokenType::Minus),
-            '+' => Self::add_token(self, TokenType::Plus),
-            ';' => Self::add_token(self, TokenType::Semicolon),
-            '*' => Self::add_token(self, TokenType::Star),
+            '(' => Self::add_token(self, TokenType::LeftParen, None),
+            ')' => Self::add_token(self, TokenType::RightParen, None),
+            '{' => Self::add_token(self, TokenType::LeftBrace, None),
+            '}' => Self::add_token(self, TokenType::RightBrace, None),
+            ',' => Self::add_token(self, TokenType::Comma, None),
+            '.' => Self::add_token(self, TokenType::Dot, None),
+            '-' => Self::add_token(self, TokenType::Minus, None),
+            '+' => Self::add_token(self, TokenType::Plus, None),
+            ';' => Self::add_token(self, TokenType::Semicolon, None),
+            '*' => Self::add_token(self, TokenType::Star, None),
             '!' => {
                 if Self::advance_peek(self, '=') {
-                    Self::add_token(self, TokenType::BangEqual);
+                    Self::add_token(self, TokenType::BangEqual, None);
                 } else {
-                    Self::add_token(self, TokenType::Bang);
+                    Self::add_token(self, TokenType::Bang, None);
                 }
             }
             '=' => {
                 if Self::advance_peek(self, '=') {
-                    Self::add_token(self, TokenType::EqualEqual);
+                    Self::add_token(self, TokenType::EqualEqual, None);
                 } else {
-                    Self::add_token(self, TokenType::Equal);
+                    Self::add_token(self, TokenType::Equal, None);
                 }
             }
             '<' => {
                 if Self::advance_peek(self, '=') {
-                    Self::add_token(self, TokenType::LessEqual);
+                    Self::add_token(self, TokenType::LessEqual, None);
                 } else {
-                    Self::add_token(self, TokenType::Less);
+                    Self::add_token(self, TokenType::Less, None);
                 }
             }
             '>' => {
                 if Self::advance_peek(self, '=') {
-                    Self::add_token(self, TokenType::GreaterEqual);
+                    Self::add_token(self, TokenType::GreaterEqual, None);
                 } else {
-                    Self::add_token(self, TokenType::Greater);
+                    Self::add_token(self, TokenType::Greater, None);
                 }
             }
             '/' => {
@@ -100,7 +100,7 @@ impl Scanner {
                         Self::advance(self);
                     }
                 } else {
-                    Self::add_token(self, TokenType::Slash);
+                    Self::add_token(self, TokenType::Slash, None);
                 }
             }
             ' ' | '\r' | '\t' => {
@@ -109,6 +109,9 @@ impl Scanner {
             '\n' => {
                 self.line += 1;
                 self.column = 0;
+            }
+            '"' => {
+                Self::construct_string(self);
             }
             _ => {
                 self.errors.push(ScannerError {
@@ -152,10 +155,44 @@ impl Scanner {
         self.source[self.current]
     }
 
-    fn add_token(&mut self, token_type: TokenType) {
+    fn construct_string(&mut self) {
+        while self.peek() != '"' && !self.is_at_end() {
+            if self.peek() == '\n' {
+                self.line += 1;
+            }
+            Self::advance(self);
+        }
+
+        // Unterminated string.
+        if self.is_at_end() {
+            self.errors.push(ScannerError {
+                message: "Unterminated string.".to_string(),
+                line: self.line,
+                column: self.column,
+            });
+            return;
+        }
+
+        // The closing ".
+        // We need to advance one more time to consume the closing ".
+
+        Self::advance(self);
+        let value: String = self.source[self.start + 1..self.current - 1]
+            .iter()
+            .collect();
+
+        Self::add_token(self, TokenType::String, Some(value));
+    }
+
+    fn add_token(&mut self, token_type: TokenType, literal: Option<String>) {
         let text = self.source[self.start..self.current].iter().collect();
-        self.tokens
-            .push(Token::new(token_type, text, None, self.line, self.column));
+        self.tokens.push(Token::new(
+            token_type,
+            text,
+            literal,
+            self.line,
+            self.column,
+        ));
     }
 }
 
@@ -209,5 +246,14 @@ mod tests {
         assert_eq!(scanner.tokens[8].token_type, TokenType::Semicolon);
         assert_eq!(scanner.tokens[9].token_type, TokenType::Star);
         assert_eq!(scanner.tokens[10].token_type, TokenType::Eof);
+    }
+
+    #[test]
+    fn test_scan_tokens_with_whitespace() {
+        let source = "hello () ".to_string();
+        let mut scanner = Scanner::new(source);
+        scanner.scan_tokens();
+
+        assert_eq!(scanner.tokens.len(), 2);
     }
 }
