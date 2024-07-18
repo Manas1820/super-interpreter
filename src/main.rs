@@ -26,9 +26,22 @@ fn main() {
             // Uncomment this block to pass the first stage
             if !file_contents.is_empty() {
                 let mut scanner = Scanner::new(file_contents);
-                let tokens = scanner.scan_tokens();
-                for token in tokens {
-                    println!("{}", token);
+                if scanner.error.is_some() {
+                    let error = scanner.error.unwrap();
+                    writeln!(
+                        io::stderr(),
+                        "Error: {} at line {} column {}",
+                        error.message,
+                        error.line,
+                        error.column
+                    )
+                    .unwrap();
+                    return;
+                } else {
+                    let tokens = scanner.scan_tokens();
+                    for token in tokens {
+                        println!("{}", token);
+                    }
                 }
             } else {
                 println!("EOF  null"); // Placeholder, remove this line when implementing the scanner

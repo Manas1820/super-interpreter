@@ -1,6 +1,13 @@
 use crate::domain::token::Token;
 use crate::domain::token_type::TokenType;
 
+/*
+    The Scanner is responsible for converting the source code into a sequence of tokens.
+    The Scanner will read the source code character by character and convert it into tokens.
+
+    Reference - https://craftinginterpreters.com/scanning.html#recognizing-lexemes
+*/
+
 #[derive(Debug, Clone)]
 pub struct Scanner {
     pub source: String,
@@ -9,7 +16,7 @@ pub struct Scanner {
     pub current: usize,
     pub line: u32,
     pub column: u32,
-    pub errors: Option<ScannerError>,
+    pub error: Option<ScannerError>,
 }
 
 impl Scanner {
@@ -21,7 +28,7 @@ impl Scanner {
             current: 0,
             line: 1,
             column: 1,
-            errors: None,
+            error: None,
         }
     }
 
@@ -43,7 +50,7 @@ impl Scanner {
     }
 
     fn is_at_end(&self) -> bool {
-        self.current >= self.source.len()
+        self.current >= self.source.len() || self.error.is_some()
     }
 
     fn scan_token<'a>(&mut self) {
@@ -60,7 +67,11 @@ impl Scanner {
             ';' => Self::add_token(self, TokenType::Semicolon),
             '*' => Self::add_token(self, TokenType::Star),
             _ => {
-                todo!("Implement the rest of the scan_token function")
+                self.error = Some(ScannerError {
+                    message: format!("Unexpected character: {}", current_char),
+                    line: self.line,
+                    column: self.column,
+                });
             }
         }
     }
