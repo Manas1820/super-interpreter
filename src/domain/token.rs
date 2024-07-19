@@ -1,10 +1,11 @@
+use super::literal::Literal;
 use super::token_type::TokenType;
 
 #[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
-    pub literal: Option<String>,
+    pub literal: Literal,
     pub line: u32,
     pub column: u32,
 }
@@ -13,11 +14,11 @@ impl Token {
     pub fn new(
         token_type: TokenType,
         lexeme: String,
-        literal: Option<String>,
+        literal: Literal,
         line: u32,
         column: u32,
-    ) -> Token {
-        Token {
+    ) -> Self {
+        Self {
             token_type,
             lexeme,
             literal,
@@ -29,12 +30,6 @@ impl Token {
 
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{} {} {}",
-            self.token_type,
-            self.lexeme,
-            self.literal.as_ref().unwrap_or(&"null".to_string())
-        )
+        write!(f, "{} {} {}", self.token_type, self.lexeme, self.literal)
     }
 }

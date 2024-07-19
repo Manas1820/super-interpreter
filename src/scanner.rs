@@ -1,5 +1,6 @@
 use crate::domain::token::Token;
 use crate::domain::token_type::TokenType;
+use crate::domain::Literal;
 
 /*
     The Scanner is responsible for converting the source code into a sequence of tokens.
@@ -42,7 +43,7 @@ impl Scanner {
         self.tokens.push(Token::new(
             TokenType::Eof,
             "".to_string(),
-            None,
+            Literal::Nil,
             self.line,
             self.column,
         ));
@@ -55,42 +56,42 @@ impl Scanner {
     fn scan_token(&mut self) {
         let current_char = Self::advance(self);
         match current_char {
-            '(' => Self::add_token(self, TokenType::LeftParen, None),
-            ')' => Self::add_token(self, TokenType::RightParen, None),
-            '{' => Self::add_token(self, TokenType::LeftBrace, None),
-            '}' => Self::add_token(self, TokenType::RightBrace, None),
-            ',' => Self::add_token(self, TokenType::Comma, None),
-            '.' => Self::add_token(self, TokenType::Dot, None),
-            '-' => Self::add_token(self, TokenType::Minus, None),
-            '+' => Self::add_token(self, TokenType::Plus, None),
-            ';' => Self::add_token(self, TokenType::Semicolon, None),
-            '*' => Self::add_token(self, TokenType::Star, None),
+            '(' => Self::add_token(self, TokenType::LeftParen, Literal::Nil),
+            ')' => Self::add_token(self, TokenType::RightParen, Literal::Nil),
+            '{' => Self::add_token(self, TokenType::LeftBrace, Literal::Nil),
+            '}' => Self::add_token(self, TokenType::RightBrace, Literal::Nil),
+            ',' => Self::add_token(self, TokenType::Comma, Literal::Nil),
+            '.' => Self::add_token(self, TokenType::Dot, Literal::Nil),
+            '-' => Self::add_token(self, TokenType::Minus, Literal::Nil),
+            '+' => Self::add_token(self, TokenType::Plus, Literal::Nil),
+            ';' => Self::add_token(self, TokenType::Semicolon, Literal::Nil),
+            '*' => Self::add_token(self, TokenType::Star, Literal::Nil),
             '!' => {
                 if Self::advance_peek(self, '=') {
-                    Self::add_token(self, TokenType::BangEqual, None);
+                    Self::add_token(self, TokenType::BangEqual, Literal::Nil);
                 } else {
-                    Self::add_token(self, TokenType::Bang, None);
+                    Self::add_token(self, TokenType::Bang, Literal::Nil);
                 }
             }
             '=' => {
                 if Self::advance_peek(self, '=') {
-                    Self::add_token(self, TokenType::EqualEqual, None);
+                    Self::add_token(self, TokenType::EqualEqual, Literal::Nil);
                 } else {
-                    Self::add_token(self, TokenType::Equal, None);
+                    Self::add_token(self, TokenType::Equal, Literal::Nil);
                 }
             }
             '<' => {
                 if Self::advance_peek(self, '=') {
-                    Self::add_token(self, TokenType::LessEqual, None);
+                    Self::add_token(self, TokenType::LessEqual, Literal::Nil);
                 } else {
-                    Self::add_token(self, TokenType::Less, None);
+                    Self::add_token(self, TokenType::Less, Literal::Nil);
                 }
             }
             '>' => {
                 if Self::advance_peek(self, '=') {
-                    Self::add_token(self, TokenType::GreaterEqual, None);
+                    Self::add_token(self, TokenType::GreaterEqual, Literal::Nil);
                 } else {
-                    Self::add_token(self, TokenType::Greater, None);
+                    Self::add_token(self, TokenType::Greater, Literal::Nil);
                 }
             }
             '/' => {
@@ -100,7 +101,7 @@ impl Scanner {
                         Self::advance(self);
                     }
                 } else {
-                    Self::add_token(self, TokenType::Slash, None);
+                    Self::add_token(self, TokenType::Slash, Literal::Nil);
                 }
             }
             ' ' | '\r' | '\t' => {
@@ -112,6 +113,9 @@ impl Scanner {
             }
             '"' => {
                 Self::construct_string(self);
+            }
+            '0'..='9' => {
+                Self::construct_number(self);
             }
             _ => {
                 self.errors.push(ScannerError {
@@ -181,10 +185,42 @@ impl Scanner {
             .iter()
             .collect();
 
-        Self::add_token(self, TokenType::String, Some(value));
+        Self::add_token(self, TokenType::String, Literal::String { value });
     }
 
-    fn add_token(&mut self, token_type: TokenType, literal: Option<String>) {
+    fn construct_number(&mut self) {
+        while self.peek().is_numeric() {
+            Self::advance(self);
+        }
+
+        // Look for a fractional part.
+        if self.peek() == '.' && self.peek_next().is_numeric() {
+            // Consume the "."
+            Self::advance(self);
+
+            while self.peek().is_numeric() {
+                Self::advance(self);
+            }
+        }
+
+        let value: f64 = self.source[self.start..self.current]
+            .iter()
+            .collect::<String>()
+            .parse()
+            .unwrap();
+
+        Self::add_token(self, TokenType::Number, Literal::Number { value });
+    }
+
+    fn peek_next(&mut self) -> char {
+        if self.current + 1 >= self.source.len() {
+            return '\0';
+        }
+
+        self.source[self.current + 1]
+    }
+
+    fn add_token(&mut self, token_type: TokenType, literal: Literal) {
         let text = self.source[self.start..self.current].iter().collect();
         self.tokens.push(Token::new(
             token_type,
