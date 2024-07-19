@@ -10,7 +10,7 @@ pub enum Literal {
 impl std::fmt::Display for Literal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Literal::Identifier { value } => write!(f, "null"),
+            Literal::Identifier { value: _ } => write!(f, "null"),
             Literal::String { value } => write!(f, "{}", value),
             Literal::Number { value } => write!(f, "{:?}", value),
             Literal::Boolean { value } => write!(f, "{}", value),
