@@ -117,6 +117,9 @@ impl Scanner {
             '0'..='9' => {
                 Self::construct_number(self);
             }
+            'a'..='z' | 'A'..='Z' | '_' => {
+                Self::construct_identifier(self);
+            }
             _ => {
                 self.errors.push(ScannerError {
                     message: format!("Unexpected character: {}", current_char),
@@ -220,6 +223,35 @@ impl Scanner {
         self.source[self.current + 1]
     }
 
+    fn construct_identifier(&mut self) {
+        while self.peek().is_alphanumeric() || self.peek() == '_' {
+            Self::advance(self);
+        }
+
+        let text: String = self.source[self.start..self.current].iter().collect();
+        let token_type = match text.as_str() {
+            "and" => TokenType::And,
+            "class" => TokenType::Class,
+            "else" => TokenType::Else,
+            "false" => TokenType::False,
+            "for" => TokenType::For,
+            "fun" => TokenType::Fun,
+            "if" => TokenType::If,
+            "nil" => TokenType::Nil,
+            "or" => TokenType::Or,
+            "print" => TokenType::Print,
+            "return" => TokenType::Return,
+            "super" => TokenType::Super,
+            "this" => TokenType::This,
+            "true" => TokenType::True,
+            "var" => TokenType::Var,
+            "while" => TokenType::While,
+            _ => TokenType::Identifier,
+        };
+
+        Self::add_token(self, token_type, Literal::Nil);
+    }
+
     fn add_token(&mut self, token_type: TokenType, literal: Literal) {
         let text = self.source[self.start..self.current].iter().collect();
         self.tokens.push(Token::new(
@@ -285,11 +317,22 @@ mod tests {
     }
 
     #[test]
-    fn test_scan_tokens_with_whitespace() {
-        let source = "hello () ".to_string();
+    fn test_scan_tokens_for_string() {
+        let source = format!("\"Coolstorm\"");
         let mut scanner = Scanner::new(source);
         scanner.scan_tokens();
 
         assert_eq!(scanner.tokens.len(), 2);
+        assert_eq!(scanner.tokens[0].token_type, TokenType::String);
+    }
+
+    #[test]
+    fn test_scan_tokens_for_number() {
+        let source = format!("123.45");
+        let mut scanner = Scanner::new(source);
+        scanner.scan_tokens();
+
+        assert_eq!(scanner.tokens.len(), 2);
+        assert_eq!(scanner.tokens[0].token_type, TokenType::Number);
     }
 }
