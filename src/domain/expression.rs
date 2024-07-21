@@ -23,9 +23,7 @@ pub enum Expression {
         operator: Token,
         right: Box<Expression>,
     },
-    Grouping {
-        expression: Vec<Expression>,
-    },
+    Grouping(Box<Expression>),
     Unary {
         operator: Token,
         right: Box<Expression>,
@@ -42,8 +40,8 @@ impl Expression {
         }
     }
 
-    pub fn new_grouping(expression: Vec<Expression>) -> Self {
-        Self::Grouping { expression }
+    pub fn new_grouping(expression: Expression) -> Self {
+        Self::Grouping(Box::new(expression))
     }
 
     pub fn new_unary(operator: Token, right: Box<Expression>) -> Self {
@@ -65,14 +63,17 @@ impl std::fmt::Display for Expression {
             } => {
                 write!(f, "({} {} {})", left, operator, right)
             }
-            Expression::Grouping { expression } => {
-                todo!()
-            }
             Expression::Unary { operator, right } => {
                 write!(f, "{} {}", operator, right)
             }
             Expression::Literal(literal) => {
                 write!(f, "{}", literal)
+            }
+            Expression::Grouping(literal) => {
+                write!(f, "(group {})", literal)
+            }
+            _ => {
+                write!(f, "null")
             }
         }
     }

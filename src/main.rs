@@ -60,8 +60,19 @@ fn main() -> ExitCode {
 
                 // Parse the tokens
                 let mut parser = Parser::new(scanner.tokens);
-                for paresd in parser.parse() {
-                    println!("{}", paresd);
+
+                let parsed_result = parser.parse();
+
+                if !parser.errors.is_empty() {
+                    exit_code = ExitCode::from(65);
+
+                    for error in &parser.errors {
+                        eprintln!("{}", error);
+                    }
+                } else {
+                    for paresd in parsed_result {
+                        println!("{}", paresd);
+                    }
                 }
             } else {
                 writeln!(io::stderr(), "Failed to read file {}", filename).unwrap();

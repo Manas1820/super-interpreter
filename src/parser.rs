@@ -1,13 +1,35 @@
 use crate::domain::{token::Token, Expression, Literal, TokenType};
 
+pub struct ParserError {
+    pub message: String,
+    pub token: Token,
+}
+
+impl ParserError {
+    pub fn new(message: String, token: Token) -> Self {
+        Self { message, token }
+    }
+}
+
+impl std::fmt::Display for ParserError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[line {}] Error: {}", self.token.line, self.message)
+    }
+}
+
 pub struct Parser {
     pub tokens: Vec<Token>,
     pub current: usize,
+    pub errors: Vec<ParserError>,
 }
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, current: 0 }
+        Self {
+            tokens,
+            current: 0,
+            errors: Vec::new(),
+        }
     }
 
     pub fn parse(&mut self) -> Vec<Expression> {
@@ -49,7 +71,7 @@ impl Parser {
         return false;
     }
 
-    // will be used to check if the current token is of the expected type
+    // will be used to check if the current token is of  the expected type
     // if it is, we will just peek  the token and not consume
     fn check_future_for_token(&self, token_type: TokenType) -> bool {
         if self.is_at_end() {
@@ -127,9 +149,10 @@ impl Parser {
         }
 
         self.primary()
+            .unwrap_or(Expression::new_literal(Literal::Nil))
     }
 
-    fn primary(&mut self) -> Expression {
+    fn primary(&mut self) -> Option<Expression> {
         if self.advance_for_token_types(vec![
             TokenType::False,
             TokenType::True,
@@ -148,23 +171,39 @@ impl Parser {
                 // with the value of the nil
                 // if the literal is a identifier, we will return an expression
                 // with the value of the identifier
-                Literal::Number(value) => return Expression::new_literal(Literal::Number(value)),
-                Literal::String(value) => return Expression::new_literal(Literal::String(value)),
-                Literal::Boolean(value) => return Expression::new_literal(Literal::Boolean(value)),
-                Literal::Nil => return Expression::new_literal(Literal::Nil),
+                Literal::Number(value) => {
+                    return Some(Expression::new_literal(Literal::Number(value)))
+                }
+                Literal::String(value) => {
+                    return Some(Expression::new_literal(Literal::String(value)))
+                }
+                Literal::Boolean(value) => {
+                    return Some(Expression::new_literal(Literal::Boolean(value)))
+                }
+                Literal::Nil => return Some(Expression::new_literal(Literal::Nil)),
                 Literal::Identifier(value) => {
-                    return Expression::new_literal(Literal::Identifier(value))
+                    return Some(Expression::new_literal(Literal::Identifier(value)))
                 }
             };
         }
 
         if self.advance_for_token_types(vec![TokenType::LeftParen]) {
-            // let expression = self.expression();
-            if self.advance_for_token_types(vec![TokenType::RightParen]) {
-                todo!()
+            let expression = self.expression();
+            if self.check_future_for_token(TokenType::RightParen) {
+                self.advance();
+                return Some(Expression::new_grouping(expression));
             }
+            self.errors.push(ParserError {
+                message: "Expect ')' after expression.".to_string(),
+                token: self.peek(),
+            });
         }
 
-        panic!("Expect expression.");
+        self.errors.push(ParserError {
+            message: "".to_string(),
+            token: self.peek(),
+        });
+
+        None
     }
 }

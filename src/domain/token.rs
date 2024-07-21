@@ -32,10 +32,10 @@ impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(literal) = &self.literal {
             match literal {
-                Literal::Boolean(boolean) => {
+                Literal::Boolean(_) => {
                     return write!(f, "{} {} null", self.token_type, self.lexeme)
                 }
-                Literal::Identifier(identifier) => {
+                Literal::Identifier(_) => {
                     return write!(f, "{} {} null", self.token_type, self.lexeme)
                 }
                 Literal::Nil => return write!(f, "{} {} null", self.token_type, literal),
