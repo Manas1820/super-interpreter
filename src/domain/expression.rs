@@ -64,7 +64,7 @@ impl std::fmt::Display for Expression {
                 write!(f, "({} {} {})", left, operator, right)
             }
             Expression::Unary { operator, right } => {
-                write!(f, "{} {}", operator, right)
+                write!(f, "({} {})", operator.lexeme, right)
             }
             Expression::Literal(literal) => {
                 write!(f, "{}", literal)
