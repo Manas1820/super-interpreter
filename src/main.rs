@@ -63,7 +63,13 @@ fn main() -> ExitCode {
 
                 let parsed_result = parser.parse();
 
-                if !parser.errors.is_empty() {
+                if !scanner.errors.is_empty() {
+                    exit_code = ExitCode::from(65);
+
+                    for error in &scanner.errors {
+                        eprintln!("{}", error);
+                    }
+                } else if !parser.errors.is_empty() {
                     exit_code = ExitCode::from(65);
 
                     for error in &parser.errors {
