@@ -5,7 +5,7 @@ use super::token_type::TokenType;
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
-    pub literal: Literal,
+    pub literal: Option<Literal>,
     pub line: u32,
     pub column: u32,
 }
@@ -14,7 +14,7 @@ impl Token {
     pub fn new(
         token_type: TokenType,
         lexeme: String,
-        literal: Literal,
+        literal: Option<Literal>,
         line: u32,
         column: u32,
     ) -> Self {
@@ -30,6 +30,19 @@ impl Token {
 
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {} {}", self.token_type, self.lexeme, self.literal)
+        if let Some(literal) = &self.literal {
+            match literal {
+                Literal::Boolean(boolean) => {
+                    return write!(f, "{} {} null", self.token_type, self.lexeme)
+                }
+                Literal::Identifier(identifier) => {
+                    return write!(f, "{} {} null", self.token_type, self.lexeme)
+                }
+                Literal::Nil => return write!(f, "{} {} null", self.token_type, literal),
+                _ => return write!(f, "{} {} {}", self.token_type, self.lexeme, literal),
+            }
+        } else {
+            write!(f, "{} {} null", self.token_type, self.lexeme)
+        }
     }
 }

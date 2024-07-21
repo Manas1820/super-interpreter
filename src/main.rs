@@ -1,3 +1,4 @@
+use interpreter_starter_rust::parser::Parser;
 use interpreter_starter_rust::scanner::Scanner;
 use std::env;
 use std::fs;
@@ -44,6 +45,27 @@ fn main() -> ExitCode {
                 }
             } else {
                 println!("EOF  null"); // Placeholder, remove this line when implementing the scanner
+            }
+        }
+        "parse" => {
+            let file_contents = fs::read_to_string(filename).unwrap_or_else(|_| {
+                writeln!(io::stderr(), "Failed to read file {}", filename).unwrap();
+                String::new()
+            });
+
+            if !file_contents.is_empty() {
+                // Scan the tokens
+                let mut scanner = Scanner::new(file_contents);
+                scanner.scan_tokens();
+
+                // Parse the tokens
+                let mut parser = Parser::new(scanner.tokens);
+                for paresd in parser.parse() {
+                    println!("{}", paresd);
+                }
+            } else {
+                writeln!(io::stderr(), "Failed to read file {}", filename).unwrap();
+                return exit_code;
             }
         }
         _ => {

@@ -6,3 +6,6 @@ pub use token_type::TokenType;
 
 pub mod literal;
 pub use literal::Literal;
+
+pub mod expression;
+pub use expression::Expression;
